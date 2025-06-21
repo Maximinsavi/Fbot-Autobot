@@ -1,43 +1,43 @@
 const axios = require("axios");
 
 module.exports = {
-    name: "ai",
-    usePrefix: false,
-    usage: "ai <your question> | <reply to an image>",
-    version: "1.2",
-    admin: false,
-    cooldown: 2,
+name: "ai",
+usePrefix: false,
+usage: "ai <your question> | <reply to an image>",
+version: "1.2",
+admin: false,
+cooldown: 2,
 
-    execute: async ({ api, event, args }) => {
-        try {
-            const { threadID } = event;
-            let prompt = args.join(" ");
-            let imageUrl = null;
+execute: async ({ api, event, args }) => {
+try {
+const { threadID } = event;
+let prompt = args.join(" ");
+let imageUrl = null;
+let apiUrl = https://autobot.mark-projects.site/api/gemini-2.5-pro-vison?ask=${encodeURIComponent(prompt)};
 
-            // Utilisation de l'API ChatGPT 4.0 Free via un backend proxy (exemple)
-            let apiUrl = `https://autobot.mark-projects.site/api/chatgpt-free?ask=${encodeURIComponent(prompt)}`;
+if (event.messageReply && event.messageReply.attachments.length > 0) {    
+        const attachment = event.messageReply.attachments[0];    
+        if (attachment.type === "photo") {    
+            imageUrl = attachment.url;    
+            apiUrl += `&imagurl=${encodeURIComponent(imageUrl)}`;    
+        }    
+    }    
 
-            if (event.messageReply && event.messageReply.attachments.length > 0) {
-                const attachment = event.messageReply.attachments[0];
-                if (attachment.type === "photo") {
-                    imageUrl = attachment.url;
-                    apiUrl += `&imageurl=${encodeURIComponent(imageUrl)}`;
-                }
-            }
+    const loadingMsg = await api.sendMessage("🧠 𝗠𝗮𝘅𝗶𝗺𝗶𝗻 𝗕𝗼𝘁 is thinking... ", threadID);    
 
-            const loadingMsg = await api.sendMessage("🤖 ChatGPT réfléchit... 🧠", threadID);
+    const response = await axios.get(apiUrl);    
+    const description = response?.data?.data?.description;    
 
-            const response = await axios.get(apiUrl);
-            const answer = response?.data?.data?.description || response?.data?.answer;
+    if (description) {    
+        return api.sendMessage(`🤖 𝗠𝗮𝘅𝗶𝗺𝗶𝗻 𝗕𝗼𝘁\n━━━━━━━━━━━━━━━━\n${description}\n━━━━━━━━━━━━━━━━`, threadID, loadingMsg.messageID);    
+    }    
 
-            if (answer) {
-                return api.sendMessage(`🤖 **ChatGPT 4.0**\n━━━━━━━━━━━━━━━━\n${answer}\n━━━━━━━━━━━━━━━━`, threadID, loadingMsg.messageID);
-            }
+    return api.sendMessage("⚠️ No description found in response.", threadID, loadingMsg.messageID);    
+} catch (error) {    
+    console.error("❌ 𝗕𝗼𝘁 Error:", error);    
+    return api.sendMessage("❌ Error while contacting 𝗠𝗮𝘅𝗶𝗺𝗶𝗻 𝗕𝗼𝘁 API.", event.threadID);    
+}
 
-            return api.sendMessage("⚠️ Aucune réponse trouvée.", threadID, loadingMsg.messageID);
-        } catch (error) {
-            console.error("❌ ChatGPT Error:", error.message);
-            return api.sendMessage("❌ Erreur lors de la communication avec ChatGPT API.", event.threadID);
-        }
-    }
+}
+
 };
